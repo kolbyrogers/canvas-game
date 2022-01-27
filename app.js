@@ -39,12 +39,10 @@ var myGameArea = {
 		this.canvas.height = 600;
 		this.context = this.canvas.getContext("2d");
 		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-		this.frameNo = 0;
 		this.interval = setInterval(updateGameArea, 20);
 		window.addEventListener("keyup", (event) => {
 			if (event.code === "Space") {
 				spacePressCount++;
-				console.log(spacePressCount);
 				myGamePiece.shoot();
 			}
 		});
@@ -121,16 +119,14 @@ function component(width, height, color, x, y, type) {
 		return collision;
 	};
 	this.shoot = function () {
-		for (var i = 0; i < this.fireRate * 100; i++) {
-			var bullet = new component(5, 5, "black", this.x + 1000, this.y + 1000);
+		var bullet = new component(5, 5, "black", this.x + 1000, this.y + 1000);
 
-			bullet.x = myGamePiece.x;
-			bullet.y = myGamePiece.y;
-			bullet.angle += this.angle;
+		bullet.x = myGamePiece.x;
+		bullet.y = myGamePiece.y;
+		bullet.angle += this.angle;
 
-			bullet.speed = 9;
-			bullets.push(bullet);
-		}
+		bullet.speed = 9;
+		bullets.push(bullet);
 	};
 	this.clear = function () {
 		this.height = 0;
@@ -162,8 +158,8 @@ function addPowerup() {
 function updateGameArea() {
 	powerups.forEach((powerup) => {
 		if (myGamePiece.collideWith(powerup)) {
-			myGamePiece.speed += 30;
-			console.log(myGamePiece.speed);
+			myGamePiece.fireRate += 30;
+			console.log(myGamePiece.fireRate);
 			powerup.clear();
 		}
 	});
