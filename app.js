@@ -1,34 +1,41 @@
-var myGamePiece, enemy, score;
+var myGamePiece, enemy, instructions, score;
 var enemies = [];
 var bullets = [];
+var powerups = [];
+var powerupCount = 0;
 var enemiesDefeated = 0;
+var spacePressCount = 0;
+var movementPressCount = 0;
 
 function startGame() {
 	myGamePiece = new component(
 		32,
 		32,
 		"img/tank.png",
-		myGameArea.canvas.width / 2 + myGameArea.canvas.width / 3,
-		myGameArea.canvas.height / 2 + myGameArea.canvas.height / 1,
+		myGameArea.canvas.width * 1.5,
+		myGameArea.canvas.height * 2.25,
 		"image"
 	);
 	enemy = new component(
 		32,
 		32,
 		"img/enemy.png",
-		30 + Math.random() * (myGameArea.canvas.width - 60),
-		30 + Math.random() * (myGameArea.canvas.height - 60),
+		myGameArea.canvas.width * 1.5,
+		myGameArea.canvas.height,
 		"image"
 	);
 	enemies.push(enemy);
-	score = new component("24px", "sans-serif", "black", 20, 40, "text");
+	score = new component("20px", "sans-serif", "black", 20, 40, "text");
+	accuracy = new component("20px", "sans-serif", "black", 140, 40, "text");
+	instructions = new component("28px", "sans-serif", "black", 315, 255, "text");
+	wasdInstruction = new component("28px", "sans-serif", "black", 335, 420, "text");
 	myGameArea.start();
 }
 
 var myGameArea = {
 	canvas: document.createElement("canvas"),
 	start: function () {
-		this.canvas.width = 600;
+		this.canvas.width = 900;
 		this.canvas.height = 600;
 		this.context = this.canvas.getContext("2d");
 		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
@@ -36,7 +43,8 @@ var myGameArea = {
 		this.interval = setInterval(updateGameArea, 20);
 		window.addEventListener("keyup", (event) => {
 			if (event.code === "Space") {
-				console.log("Space pressed");
+				spacePressCount++;
+				console.log(spacePressCount);
 				myGamePiece.shoot();
 			}
 		});
@@ -66,7 +74,7 @@ function component(width, height, color, x, y, type) {
 	this.moveAngle = 0;
 	this.x = x;
 	this.y = y;
-	this.life = 0;
+	this.fireRate = 1;
 	this.bullets = [];
 	this.update = function () {
 		ctx = myGameArea.context;
@@ -113,14 +121,16 @@ function component(width, height, color, x, y, type) {
 		return collision;
 	};
 	this.shoot = function () {
-		var bullet = new component(5, 5, "black", this.x + 1000, this.y + 1000);
+		for (var i = 0; i < this.fireRate * 100; i++) {
+			var bullet = new component(5, 5, "black", this.x + 1000, this.y + 1000);
 
-		bullet.x = myGamePiece.x;
-		bullet.y = myGamePiece.y;
-		bullet.angle += this.angle;
+			bullet.x = myGamePiece.x;
+			bullet.y = myGamePiece.y;
+			bullet.angle += this.angle;
 
-		bullet.speed = 5;
-		bullets.push(bullet);
+			bullet.speed = 9;
+			bullets.push(bullet);
+		}
 	};
 	this.clear = function () {
 		this.height = 0;
@@ -138,16 +148,42 @@ function addEnemy() {
 	);
 	enemies.push(enemy);
 }
+function addPowerup() {
+	powerup = new component(
+		32,
+		32,
+		"img/powerup.png",
+		30 + Math.random() * (900 - 60),
+		30 + Math.random() * (600 - 60),
+		"image"
+	);
+	powerups.push(powerup);
+}
 function updateGameArea() {
+	powerups.forEach((powerup) => {
+		if (myGamePiece.collideWith(powerup)) {
+			myGamePiece.speed += 30;
+			console.log(myGamePiece.speed);
+			powerup.clear();
+		}
+	});
 	enemies.forEach((enemy) => {
+		if (myGamePiece.collideWith(enemy)) {
+			enemiesDefeated--;
+			enemy.x = 30 + Math.random() * (900 - 60);
+			enemy.y = 30 + Math.random() * (600 - 60);
+		}
 		bullets.forEach((bullet) => {
 			if (bullet.collideWith(enemy)) {
 				enemiesDefeated++;
 				enemy.x = 30 + Math.random() * (900 - 60);
 				enemy.y = 30 + Math.random() * (600 - 60);
 				bullet.clear();
-				if (enemiesDefeated % 5 == 0) {
+				if (enemiesDefeated % 7 == 0) {
 					addEnemy();
+				} else if (enemiesDefeated % 3 == 0) {
+					addPowerup();
+					powerupCount++;
 				}
 			}
 		});
@@ -157,18 +193,36 @@ function updateGameArea() {
 	myGamePiece.speed = 0;
 	if (myGameArea.keys && myGameArea.keys[65]) {
 		myGamePiece.moveAngle = -3;
+		movementPressCount = 1;
 	}
 	if (myGameArea.keys && myGameArea.keys[68]) {
 		myGamePiece.moveAngle = 3;
+		movementPressCount = 1;
 	}
 	if (myGameArea.keys && myGameArea.keys[87]) {
 		myGamePiece.speed = 3;
+		movementPressCount = 1;
 	}
 	if (myGameArea.keys && myGameArea.keys[83]) {
 		myGamePiece.speed = -2;
+		movementPressCount = 1;
 	}
 	score.text = "SCORE: " + enemiesDefeated;
 	score.update();
+
+	if (spacePressCount == 0) {
+		instructions.text = "Press Space to Shoot";
+		instructions.update();
+	}
+	if (movementPressCount == 0 && spacePressCount > 0) {
+		wasdInstruction.text = "Use WASD to move";
+		wasdInstruction.update();
+	}
+	if (spacePressCount != 0) {
+		accuracy.text =
+			"ACCURACY: " + Math.round((enemiesDefeated / spacePressCount) * 100) / 100;
+		accuracy.update();
+	}
 	myGamePiece.newPos();
 	myGamePiece.update();
 	bullets.forEach((bullet) => {
@@ -178,5 +232,9 @@ function updateGameArea() {
 	enemies.forEach((enemy) => {
 		enemy.newPos();
 		enemy.update();
+	});
+	powerups.forEach((powerup) => {
+		powerup.newPos();
+		powerup.update();
 	});
 }
